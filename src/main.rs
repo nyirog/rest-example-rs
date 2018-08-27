@@ -37,6 +37,12 @@ fn list() -> Json<HashMap<u32, User>> {
     Json((*users).clone())
 }
 
+#[get("/<user_id>")]
+fn get(user_id: u32) -> Json<User> {
+    let users = USERS.lock().unwrap();
+    Json((*users).get(&user_id).unwrap().clone())
+}
+
 fn main() {
-    rocket::ignite().mount("/users", routes![list]).launch();
+    rocket::ignite().mount("/users", routes![list, get]).launch();
 }
