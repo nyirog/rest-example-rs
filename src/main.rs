@@ -50,6 +50,25 @@ fn get(
     Ok(Json(user.clone()))
 }
 
+#[post("/", data = "<user>")]
+fn create(
+    common_users: State<Mutex<Users>>,
+    user: Json<User>,
+) -> Result<status::Created<String>, status::Custom<String>> {
+    let mut users = (*common_users.inner()).lock().map_err(|_| {
+        status::Custom(
+            Status::InternalServerError,
+            format!("Resource is locked by other user\n"),
+        )
+    })?;
+    let user_id = users.len();
+    users.insert(user_id as u32, user.into_inner());
+    Ok(status::Created(
+        format!("/users/{}", user_id),
+        Some(format!("{}", user_id)),
+    ))
+}
+
 fn init_users() -> Mutex<Users> {
     let mut m = HashMap::new();
     m.insert(
@@ -63,7 +82,7 @@ fn init_users() -> Mutex<Users> {
 
 fn main() {
     rocket::ignite()
-        .mount("/users", routes![list, get])
+        .mount("/users", routes![list, get, create])
         .manage(init_users())
         .launch();
 }
