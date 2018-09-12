@@ -5,38 +5,62 @@ extern crate reqwest;
 use serde_json::value::Value;
 use std::io::{self, BufRead, Error as IoError, ErrorKind};
 
-fn fetch(url: String) -> std::result::Result<Value, reqwest::Error> {
-    let response: Value =
-        reqwest::get(format!("http://localhost:8000/{}", url).as_str())?.json()?;
-    Ok(response)
+struct Get {
+    url: String,
 }
 
-fn execute(mut stack: Vec<Value>, url: String) -> Result<Vec<Value>, IoError> {
-    let value = fetch(url).map_err(|e| IoError::new(ErrorKind::Other, format!("{}", e)))?;
-    println!("{}", value);
-    stack.push(value);
-    Ok(stack)
+impl Get {
+    fn new(url: String) -> Self {
+        Get { url: url }
+    }
 }
 
-fn do_loop(stack: Vec<Value>) -> Result<(), IoError> {
-    let mut line = String::new();
+trait Command {
+    fn execute(&self, stack: &mut Vec<Value>) -> Result<(), IoError>;
+}
+
+impl Command for Get {
+    fn execute(&self, stack: &mut Vec<Value>) -> Result<(), IoError> {
+        let mut response =
+            reqwest::get(format!("http://localhost:8000/{}", self.url).as_str()).map_err(from)?;
+        let value: Value = response.json().map_err(from)?;
+        println!("{}", value);
+        stack.push(value);
+        Ok(())
+    }
+}
+
+fn from(error: reqwest::Error) -> IoError {
+    IoError::new(ErrorKind::Other, format!("{}", error))
+}
+
+fn parse(words: Vec<String>) -> Result<impl Command, IoError> {
+    match words[0].as_str() {
+        "get" => Ok(Get::new(words[1].to_string())),
+        _ => Err(IoError::new(
+            ErrorKind::Other,
+            format!("Invalid command: {}", words[0]),
+        )),
+    }
+}
+
+fn do_loop(mut stack: Vec<Value>) -> Result<(), IoError> {
+    let mut line: String = String::new();
     let stdin = io::stdin();
     stdin.lock().read_line(&mut line)?;
-    let command: Vec<&str> = line.split_whitespace().collect();
 
-    if command.len() == 0 {
+    let words: Vec<String> = line.split_whitespace().map(|s| s.to_string()).collect();
+    if words.len() == 0 {
         return Ok(());
     }
 
-    let new_stack = match command[0] {
-        "get" => execute(stack, command[1].to_string()),
-        _ => Err(IoError::new(
-            ErrorKind::Other,
-            format!("Invalid command: {}", command[0]),
-        )),
-    }?;
+    let command = parse(words)?;
+    match command.execute(&mut stack) {
+        Err(e) => println!("{}", e),
+        Ok(_) => (),
+    };
 
-    do_loop(new_stack)
+    do_loop(stack)
 }
 
 fn main() {
