@@ -11,7 +11,14 @@ fn fetch(url: String) -> std::result::Result<Value, reqwest::Error> {
     Ok(response)
 }
 
-fn do_loop() -> Result<(), IoError> {
+fn execute(mut stack: Vec<Value>, url: String) -> Result<Vec<Value>, IoError> {
+    let value = fetch(url).map_err(|e| IoError::new(ErrorKind::Other, format!("{}", e)))?;
+    println!("{}", value);
+    stack.push(value);
+    Ok(stack)
+}
+
+fn do_loop(stack: Vec<Value>) -> Result<(), IoError> {
     let mut line = String::new();
     let stdin = io::stdin();
     stdin.lock().read_line(&mut line)?;
@@ -21,21 +28,20 @@ fn do_loop() -> Result<(), IoError> {
         return Ok(());
     }
 
-    let user = match command[0] {
-        "get" => fetch(command[1].to_string())
-            .map_err(|e| IoError::new(ErrorKind::Other, format!("{}", e))),
+    let new_stack = match command[0] {
+        "get" => execute(stack, command[1].to_string()),
         _ => Err(IoError::new(
             ErrorKind::Other,
             format!("Invalid command: {}", command[0]),
         )),
     }?;
 
-    println!("{}", user);
-    do_loop()
+    do_loop(new_stack)
 }
 
 fn main() {
-    match do_loop() {
+    let stack: Vec<Value> = vec![];
+    match do_loop(stack) {
         Ok(r) => r,
         Err(e) => println!("Error: {}", e),
     }
