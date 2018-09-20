@@ -9,6 +9,7 @@ enum Command {
     Get(String),
     List(),
     Pop(),
+    View(String),
     Invalid(String),
 }
 
@@ -17,6 +18,7 @@ fn parse(words: Vec<String>) -> Command {
         "get" => Command::Get(words[1].to_string()),
         "list" => Command::List(),
         "pop" => Command::Pop(),
+        "view" => Command::View(words[1].to_string()),
         _ => Command::Invalid(words[0].to_string()),
     }
 }
@@ -26,6 +28,7 @@ fn execute(command: Command, stack: &mut Vec<Value>) -> Result<(), IoError> {
         Command::Get(url) => fetch(stack, url),
         Command::List() => list_stack(stack.to_vec()),
         Command::Pop() => pop_stack(stack),
+        Command::View(key) => view_stack_item(stack, key),
         Command::Invalid(command) => Err(IoError::new(
             ErrorKind::Other,
             format!("Invalid command {}", command),
@@ -56,6 +59,19 @@ fn pop_stack(stack: &mut Vec<Value>) -> Result<(), IoError> {
     let value: Value = stack.pop().ok_or(IoError::new(ErrorKind::Other, "Stack is empty"))?;
     println!("{}", value);
     Ok(())
+}
+
+fn view_stack_item(stack: &mut Vec<Value>, key: String) -> Result<(), IoError> {
+    let len = stack.len();
+    if len == 0 {
+        Err(IoError::new(ErrorKind::Other, "Stack is empty"))
+    } else {
+        let value = stack[len-1].clone();
+        let item: Value = value.get(key).ok_or(IoError::new(ErrorKind::Other, format!("Invalid key")))?.clone();
+        println!("{}", item);
+        stack.push(item);
+        Ok(())
+    }
 }
 
 fn do_loop(mut stack: Vec<Value>) -> Result<(), IoError> {
