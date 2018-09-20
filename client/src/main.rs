@@ -8,6 +8,7 @@ use std::io::{self, BufRead, Error as IoError, ErrorKind};
 enum Command {
     Get(String),
     List(),
+    Pop(),
     Invalid(String),
 }
 
@@ -15,6 +16,7 @@ fn parse(words: Vec<String>) -> Command {
     match words[0].as_str() {
         "get" => Command::Get(words[1].to_string()),
         "list" => Command::List(),
+        "pop" => Command::Pop(),
         _ => Command::Invalid(words[0].to_string()),
     }
 }
@@ -23,6 +25,7 @@ fn execute(command: Command, stack: &mut Vec<Value>) -> Result<(), IoError> {
     match command {
         Command::Get(url) => fetch(stack, url),
         Command::List() => list_stack(stack.to_vec()),
+        Command::Pop() => pop_stack(stack),
         Command::Invalid(command) => Err(IoError::new(
             ErrorKind::Other,
             format!("Invalid command {}", command),
@@ -47,6 +50,12 @@ fn fetch(stack: &mut Vec<Value>, url: String) -> Result<(), IoError> {
 
 fn from(error: reqwest::Error) -> IoError {
     IoError::new(ErrorKind::Other, format!("{}", error))
+}
+
+fn pop_stack(stack: &mut Vec<Value>) -> Result<(), IoError> {
+    let value: Value = stack.pop().ok_or(IoError::new(ErrorKind::Other, "Stack is empty"))?;
+    println!("{}", value);
+    Ok(())
 }
 
 fn do_loop(mut stack: Vec<Value>) -> Result<(), IoError> {
