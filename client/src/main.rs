@@ -47,7 +47,7 @@ fn fetch(stack: &mut Vec<Value>, url: String) -> Result<(), IoError> {
         reqwest::get(format!("http://localhost:8000/{}", url).as_str()).map_err(from)?;
     let value: Value = response.json().map_err(from)?;
     println!("{}", value);
-    stack.push(value);
+    stack.insert(0, value);
     Ok(())
 }
 
@@ -62,14 +62,13 @@ fn pop_stack(stack: &mut Vec<Value>) -> Result<(), IoError> {
 }
 
 fn view_stack_item(stack: &mut Vec<Value>, key: String) -> Result<(), IoError> {
-    let len = stack.len();
-    if len == 0 {
+    if stack.len() == 0 {
         Err(IoError::new(ErrorKind::Other, "Stack is empty"))
     } else {
-        let value = stack[len-1].clone();
+        let value = stack[0].clone();
         let item: Value = value.get(key).ok_or(IoError::new(ErrorKind::Other, format!("Invalid key")))?.clone();
         println!("{}", item);
-        stack.push(item);
+        stack.insert(0, item);
         Ok(())
     }
 }
