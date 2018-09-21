@@ -11,6 +11,7 @@ enum Command {
     List(),
     Pop(),
     View(String),
+    Set(String, String),
     Invalid(String),
 }
 
@@ -21,6 +22,7 @@ fn parse(words: Vec<String>) -> Command {
         "list" => Command::List(),
         "pop" => Command::Pop(),
         "view" => Command::View(words[1].to_string()),
+        "set" => Command::Set(words[1].to_string(), words[2].to_string()),
         _ => Command::Invalid(words[0].to_string()),
     }
 }
@@ -32,6 +34,7 @@ fn execute(command: Command, stack: &mut Vec<Value>) -> Result<(), IoError> {
         Command::List() => list_stack(stack.to_vec()),
         Command::Pop() => pop_stack(stack),
         Command::View(key) => view_stack_item(stack, key),
+        Command::Set(key, value) => set_stack_item(stack, key, value),
         Command::Invalid(command) => Err(IoError::new(
             ErrorKind::Other,
             format!("Invalid command {}", command),
@@ -95,6 +98,26 @@ fn view_stack_item(stack: &mut Vec<Value>, key: String) -> Result<(), IoError> {
         println!("{}", item);
         stack.insert(0, item);
         Ok(())
+    }
+}
+
+fn set_stack_item(stack: &mut Vec<Value>, key: String, value: String) -> Result<(), IoError> {
+    if stack.len() == 0 {
+        Err(IoError::new(ErrorKind::Other, "Stack is empty"))
+    } else {
+        let mut stack_value = stack[0].clone();
+        let json_value: Value = serde_json::from_str(value.as_str())?;
+        if stack_value.is_object() {
+            stack_value[key] = json_value;
+            println!("{}", stack_value);
+            stack.insert(0, stack_value);
+            Ok(())
+        } else {
+            Err(IoError::new(
+                ErrorKind::Other,
+                "Stack head is not an object",
+            ))
+        }
     }
 }
 
