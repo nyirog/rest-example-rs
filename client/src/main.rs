@@ -7,6 +7,7 @@ use std::io::{self, BufRead, Error as IoError, ErrorKind};
 
 enum Command {
     Get(String),
+    Post(String),
     List(),
     Pop(),
     View(String),
@@ -16,6 +17,7 @@ enum Command {
 fn parse(words: Vec<String>) -> Command {
     match words[0].as_str() {
         "get" => Command::Get(words[1].to_string()),
+        "post" => Command::Post(words[1].to_string()),
         "list" => Command::List(),
         "pop" => Command::Pop(),
         "view" => Command::View(words[1].to_string()),
@@ -26,6 +28,7 @@ fn parse(words: Vec<String>) -> Command {
 fn execute(command: Command, stack: &mut Vec<Value>) -> Result<(), IoError> {
     match command {
         Command::Get(url) => fetch(stack, url),
+        Command::Post(url) => post(stack.to_vec(), url),
         Command::List() => list_stack(stack.to_vec()),
         Command::Pop() => pop_stack(stack),
         Command::View(key) => view_stack_item(stack, key),
@@ -51,12 +54,30 @@ fn fetch(stack: &mut Vec<Value>, url: String) -> Result<(), IoError> {
     Ok(())
 }
 
+fn post(stack: Vec<Value>, url: String) -> Result<(), IoError> {
+    if stack.len() == 0 {
+        Err(IoError::new(ErrorKind::Other, "Stack is empty"))
+    } else {
+        let value = stack[0].clone();
+        let client = reqwest::Client::new();
+        let response = client
+            .post(format!("http://localhost:8000/{}", url).as_str())
+            .json(&value)
+            .send()
+            .map_err(from)?;
+        println!("Response status: {}", response.status());
+        Ok(())
+    }
+}
+
 fn from(error: reqwest::Error) -> IoError {
     IoError::new(ErrorKind::Other, format!("{}", error))
 }
 
 fn pop_stack(stack: &mut Vec<Value>) -> Result<(), IoError> {
-    let value: Value = stack.pop().ok_or(IoError::new(ErrorKind::Other, "Stack is empty"))?;
+    let value: Value = stack
+        .pop()
+        .ok_or(IoError::new(ErrorKind::Other, "Stack is empty"))?;
     println!("{}", value);
     Ok(())
 }
@@ -66,7 +87,10 @@ fn view_stack_item(stack: &mut Vec<Value>, key: String) -> Result<(), IoError> {
         Err(IoError::new(ErrorKind::Other, "Stack is empty"))
     } else {
         let value = stack[0].clone();
-        let item: Value = value.get(key).ok_or(IoError::new(ErrorKind::Other, format!("Invalid key")))?.clone();
+        let item: Value = value
+            .get(key)
+            .ok_or(IoError::new(ErrorKind::Other, format!("Invalid key")))?
+            .clone();
         println!("{}", item);
         stack.insert(0, item);
         Ok(())
