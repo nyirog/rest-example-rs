@@ -48,6 +48,7 @@ fn list_stack(stack: Vec<Value>) -> Result<(), IoError> {
 fn fetch(stack: &mut Vec<Value>, url: String) -> Result<(), IoError> {
     let mut response =
         reqwest::get(format!("http://localhost:8000/{}", url).as_str()).map_err(from)?;
+    println!("Response status: {}", response.status());
     let value: Value = response.json().map_err(from)?;
     println!("{}", value);
     stack.insert(0, value);
