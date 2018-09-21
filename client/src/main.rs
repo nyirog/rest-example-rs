@@ -12,6 +12,7 @@ enum Command {
     Pop(),
     View(String),
     Set(String, String),
+    Help(),
     Invalid(String),
 }
 
@@ -23,6 +24,7 @@ fn parse(words: Vec<String>) -> Command {
         "pop" => Command::Pop(),
         "view" => Command::View(words[1].to_string()),
         "set" => Command::Set(words[1].to_string(), words[2].to_string()),
+        "help" => Command::Help(),
         _ => Command::Invalid(words[0].to_string()),
     }
 }
@@ -35,6 +37,7 @@ fn execute(command: Command, stack: &mut Vec<Value>) -> Result<(), IoError> {
         Command::Pop() => pop_stack(stack),
         Command::View(key) => view_stack_item(stack, key),
         Command::Set(key, value) => set_stack_item(stack, key, value),
+        Command::Help() => help(),
         Command::Invalid(command) => Err(IoError::new(
             ErrorKind::Other,
             format!("Invalid command {}", command),
@@ -119,6 +122,30 @@ fn set_stack_item(stack: &mut Vec<Value>, key: String, value: String) -> Result<
             ))
         }
     }
+}
+
+fn help() -> Result<(), IoError> {
+    println!(
+        "rest-client
+    Interactive REST client which fetches json data from http://localhost:8000
+    and stores it in a stack for further manipulation (view, set) and to post it back.
+    head refers to the first element of the stack which can be manipulated or posted
+
+get <url>
+    fetch the url and save the response to the head of the stack
+post <url>
+    post the head of the stack to the url
+list
+    print the stack
+pop
+    remove the head of the stack
+view <key>
+    create a new stack element from the value of the key of the stack-head
+set <key> <json-data>
+    create a new stack-head by changing the value of the current head under the given key
+"
+    );
+    Ok(())
 }
 
 fn do_loop(mut stack: Vec<Value>) -> Result<(), IoError> {
