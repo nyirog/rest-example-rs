@@ -17,14 +17,24 @@ enum Command {
 }
 
 fn parse(words: Vec<String>) -> Command {
-    match words[0].as_str() {
-        "get" => Command::Get(words[1].to_string()),
-        "post" => Command::Post(words[1].to_string()),
-        "list" => Command::List(),
-        "pop" => Command::Pop(),
-        "view" => Command::View(words[1].to_string()),
-        "set" => Command::Set(words[1].to_string(), words[2].to_string()),
-        "help" => Command::Help(),
+    match words.len() {
+        0 => Command::Invalid("".to_string()),
+        1 => match words[0].as_str() {
+            "list" => Command::List(),
+            "pop" => Command::Pop(),
+            "help" => Command::Help(),
+            _ => Command::Invalid(words[0].to_string()),
+        },
+        2 => match words[0].as_str() {
+            "get" => Command::Get(words[1].to_string()),
+            "post" => Command::Post(words[1].to_string()),
+            "view" => Command::View(words[1].to_string()),
+            _ => Command::Invalid(words[0].to_string()),
+        },
+        3 => match words[0].as_str() {
+            "set" => Command::Set(words[1].to_string(), words[2].to_string()),
+            _ => Command::Invalid(words[0].to_string()),
+        },
         _ => Command::Invalid(words[0].to_string()),
     }
 }
