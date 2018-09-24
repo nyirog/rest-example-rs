@@ -6,7 +6,7 @@ easily deployable tools.
 # Preparation
 
 For rust development you only need to install rustup.
-cargo and the stabe or nightly toolchain can be install with it.
+Cargo and the stabe or nightly toolchain can be install with it.
 
 # Result
 
@@ -19,9 +19,9 @@ My discoveries are collected in the commit message of the project.
 Rust encourage to play simple and add abstractions only when it needed.
 The rustc gives human readable information quite often it worst to see
 the compile error and look the solution from there, but the official
-documentations are full with examples, which lead us to low learning
-curve. However the wording of the errors, like borrowing instead of copy,
-may strange at first but after reading The rust book it will be easy.
+documentations are full with examples too, which causes a fast learning
+curve. However the wording of the errors, like borrowing in case of references,
+may strange at first but after reading The rust book it will be easy to understand.
 
 ## Cons
 
